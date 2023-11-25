@@ -34,21 +34,6 @@ type UserUseCase struct {
 	UserRepo IUserRepository
 }
 
-func main() {
-	container := setupDIContainer()
-	app := fiber.New()
-
-	if err := setupRoutes(app, container); err != nil {
-		log.Fatalf("Route setup failed: %v", err)
-	}
-
-	go handleSignals(app)
-
-	if err := startServer(app); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
-	}
-}
-
 func handleError(c *fiber.Ctx, err error) error {
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).SendString(err.Error())
@@ -68,6 +53,21 @@ func userHandler(uc *UserUseCase) fiber.Handler {
 
 func (uc *UserUseCase) GetUserByAuth0UID(auth0UID string) (*User, error) {
 	return uc.UserRepo.FindByAuth0UID(auth0UID)
+}
+
+func main() {
+	container := setupDIContainer()
+	app := fiber.New()
+
+	if err := setupRoutes(app, container); err != nil {
+		log.Fatalf("Route setup failed: %v", err)
+	}
+
+	go handleSignals(app)
+
+	if err := startServer(app); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }
 
 func setupDIContainer() *dig.Container {
