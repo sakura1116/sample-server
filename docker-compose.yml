@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  db:
+    build:
+      context: .
+      dockerfile:
+        db.Dockerfile
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: sample
+      TZ: Asia/Tokyo
+    ports:
+      - 3306:3306
+    tty: true
+    volumes:
+      - .:/opt/sample:cached
+  api:
+    build:
+      context: .
+      dockerfile:
+        api.Dockerfile
+    ports:
+      - 8080:8080
+    volumes:
+      - .:/opt/sample:cached
+    tty: true
+    env_file:
+      - ./docker-compose.env
+    environment:
+      APP_ENV: development
+      DB_USER: root
+      DB_PASS: password
+      DB_HOST: db
+      DB_NAME: sample
+    links:
+      - db
+#  batch:
+#    build:
+#      context: .
+#      dockerfile: batch.Dockerfile
+#    volumes:
+#      - .:/opt/sample:cached
+#    environment:
+#      APP_ENV: development
+#      DB_USER: root
+#      DB_PASS: password
+#      DB_HOST: db
+#      DB_NAME: sample
+#    links:
+#      - db

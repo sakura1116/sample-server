@@ -1,4 +1,3 @@
-.idea
 # Created by https://www.toptal.com/developers/gitignore/api/go,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,macos
 
@@ -59,3 +58,7 @@ Temporary Items
 *.icloud
 
 # End of https://www.toptal.com/developers/gitignore/api/go,macos
+
+.idea
+docker-compose.env
+tmp

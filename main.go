@@ -130,7 +130,7 @@ func setupRoutes(app *fiber.App, container *dig.Container) error {
 }
 
 func startServer(app *fiber.App) error {
-	if err := app.Listen(":3000"); err != nil && err != http.ErrServerClosed {
+	if err := app.Listen(":8080"); err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil
