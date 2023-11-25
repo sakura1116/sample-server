@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/gofiber/fiber/v2"
+	"go.uber.org/dig"
 	"log"
 	"net/http"
 	"os"
@@ -11,10 +12,33 @@ import (
 	"time"
 )
 
+type User struct {
+	ID        string
+	FirstName string
+	LastName  string
+	Auth0UID  string
+}
+
+type IUserRepository interface {
+	FindByAuth0UID(auth0UID string) (*User, error)
+}
+
+type UserRepository struct {
+}
+
+func (repo *UserRepository) FindByAuth0UID(auth0UID string) (*User, error) {
+	return &User{ID: "123", FirstName: "Sample", LastName: "User", Auth0UID: auth0UID}, nil
+}
+
+type UserUseCase struct {
+	UserRepo IUserRepository
+}
+
 func main() {
+	container := setupDIContainer()
 	app := fiber.New()
 
-	if err := setupRoutes(app); err != nil {
+	if err := setupRoutes(app, container); err != nil {
 		log.Fatalf("Route setup failed: %v", err)
 	}
 
@@ -25,8 +49,31 @@ func main() {
 	}
 }
 
-func setupRoutes(app *fiber.App) error {
-	return nil
+func userHandler(uc *UserUseCase) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		user, err := uc.UserRepo.FindByAuth0UID("auth0-uid-123")
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).SendString(err.Error())
+		}
+		return c.JSON(user)
+	}
+}
+
+func setupDIContainer() *dig.Container {
+	container := dig.New()
+	container.Provide(func() IUserRepository {
+		return &UserRepository{}
+	})
+	container.Provide(func(repo IUserRepository) *UserUseCase {
+		return &UserUseCase{UserRepo: repo}
+	})
+	return container
+}
+
+func setupRoutes(app *fiber.App, container *dig.Container) error {
+	return container.Invoke(func(uc *UserUseCase) {
+		app.Get("/me", userHandler(uc))
+	})
 }
 
 func startServer(app *fiber.App) error {
