@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/dig"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -81,8 +84,47 @@ func setupDIContainer() *dig.Container {
 	return container
 }
 
+func validateToken(tokenString string, audience string, issuer string) (*jwt.Token, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte("your-256-bit-secret"), nil
+	})
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		if claims["aud"] != audience || claims["iss"] != issuer {
+			return nil, fmt.Errorf("invalid token claims")
+		}
+		return token, nil
+	} else {
+		return nil, err
+	}
+}
+
+func jwtMiddleware(next fiber.Handler) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		authHeader := c.Get("Authorization")
+		bearerToken := strings.Split(authHeader, " ")
+
+		if len(bearerToken) == 2 {
+			token, err := validateToken(bearerToken[1], "YOUR_AUTH0_AUDIENCE", "https://YOUR_AUTH0_DOMAIN/")
+			if err != nil {
+				return c.Status(fiber.StatusUnauthorized).SendString(err.Error())
+			}
+
+			// トークンが有効な場合の処理
+			fmt.Println(token)
+			return next(c)
+		} else {
+			return c.Status(fiber.StatusUnauthorized).SendString("Invalid token")
+		}
+	}
+}
+
 func setupRoutes(app *fiber.App, container *dig.Container) error {
 	return container.Invoke(func(uc *UserUseCase) {
+		//app.Get("/me", jwtMiddleware(userHandler(uc)))
 		app.Get("/me", userHandler(uc))
 	})
 }
