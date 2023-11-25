@@ -49,14 +49,25 @@ func main() {
 	}
 }
 
+func handleError(c *fiber.Ctx, err error) error {
+	if err != nil {
+		return c.Status(http.StatusInternalServerError).SendString(err.Error())
+	}
+	return nil
+}
+
 func userHandler(uc *UserUseCase) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		user, err := uc.UserRepo.FindByAuth0UID("auth0-uid-123")
-		if err != nil {
-			return c.Status(http.StatusInternalServerError).SendString(err.Error())
+		user, err := uc.GetUserByAuth0UID("auth0-uid-123")
+		if handleError(c, err) != nil {
+			return err
 		}
 		return c.JSON(user)
 	}
+}
+
+func (uc *UserUseCase) GetUserByAuth0UID(auth0UID string) (*User, error) {
+	return uc.UserRepo.FindByAuth0UID(auth0UID)
 }
 
 func setupDIContainer() *dig.Container {
