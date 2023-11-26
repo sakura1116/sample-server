@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"os"
 	"sample-server/ent"
 	"testing"
@@ -14,24 +16,50 @@ var client *ent.Client
 var ctx context.Context
 
 func TestMain(m *testing.M) {
-	client = setupMySQLDatabase()
-	defer client.Close()
 	ctx = context.Background()
+	db := openDBConnection()
+	defer db.Close()
+
+	createTestDatabase(db)
+	client = setupEntClient()
+	defer client.Close()
+
+	migrateSchema(client)
 
 	exitVal := m.Run()
 
 	os.Exit(exitVal)
 }
 
-func setupMySQLDatabase() *ent.Client {
-	// TODO
-	dsn := "root:password@tcp(localhost:3306)/sample?parseTime=True"
+func openDBConnection() *sql.DB {
+	db, err := sql.Open("mysql", "root:password@tcp(localhost:3306)/")
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	return db
+}
+
+func createTestDatabase(db *sql.DB) {
+	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS sample_test")
+	if err != nil {
+		log.Fatalf("Failed to create database: %v", err)
+	}
+}
+
+func setupEntClient() *ent.Client {
+	dsn := "root:password@tcp(localhost:3306)/sample_test?parseTime=True"
 	client, err := ent.Open("mysql", dsn)
 	if err != nil {
 		panic("failed opening connection to mysql: " + err.Error())
 	}
 	return client
 }
+func migrateSchema(client *ent.Client) {
+	if err := client.Schema.Create(ctx); err != nil {
+		panic(err)
+	}
+}
+
 func withTransaction(t *testing.T, testFunc func(*ent.Tx)) {
 	tx, err := client.Tx(ctx)
 	if err != nil {
