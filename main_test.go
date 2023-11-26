@@ -32,6 +32,7 @@ func TestMain(m *testing.M) {
 }
 
 func openDBConnection() *sql.DB {
+	// TODO refactoring
 	db, err := sql.Open("mysql", "root:password@tcp(localhost:3306)/")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
@@ -40,6 +41,7 @@ func openDBConnection() *sql.DB {
 }
 
 func createTestDatabase(db *sql.DB) {
+	// TODO refactoring
 	_, err := db.Exec("CREATE DATABASE IF NOT EXISTS sample_test")
 	if err != nil {
 		log.Fatalf("Failed to create database: %v", err)
@@ -47,6 +49,7 @@ func createTestDatabase(db *sql.DB) {
 }
 
 func setupEntClient() *ent.Client {
+	// TODO refactoring
 	dsn := "root:password@tcp(localhost:3306)/sample_test?parseTime=True"
 	client, err := ent.Open("mysql", dsn)
 	if err != nil {
