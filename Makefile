@@ -21,5 +21,7 @@ deps:
 fmt:
 	gofmt -w .
 
+test: fmt
+	go test -v -race ./...
 run:
 	go run main.go

@@ -60,6 +60,9 @@ func (repo *UserRepository) FindByAuth0UID(auth0UID string) (*User, error) {
 		Query().
 		Where(user.Auth0UIDEQ(auth0UID)).
 		Only(context.Background())
+	if ent.IsNotFound(err) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
