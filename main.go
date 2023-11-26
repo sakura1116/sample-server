@@ -18,6 +18,24 @@ import (
 	"time"
 )
 
+type Config struct {
+	DBHost string
+	DBPort string
+	DBUser string
+	DBPass string
+	DBName string
+}
+
+func NewConfig() *Config {
+	return &Config{
+		DBHost: os.Getenv("DB_HOST"),
+		DBPort: os.Getenv("DB_PORT"),
+		DBUser: os.Getenv("DB_USER"),
+		DBPass: os.Getenv("DB_PASS"),
+		DBName: os.Getenv("DB_NAME"),
+	}
+}
+
 type User struct {
 	ID        int
 	FirstName string
@@ -79,7 +97,8 @@ func (uc *UserUseCase) GetUserByAuth0UID(auth0UID string) (*User, error) {
 }
 
 func main() {
-	client := setupDatabase()
+	config := NewConfig()
+	client := setupDatabase(config)
 	defer client.Close()
 	container := setupDIContainer(client)
 
@@ -96,13 +115,8 @@ func main() {
 	}
 }
 
-func setupDatabase() *ent.Client {
-	dbHost := "db"
-	dbPort := "3306"
-	dbUser := "root"
-	dbPassword := "password"
-	dbName := "sample"
-	dsn := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=True"
+func setupDatabase(config *Config) *ent.Client {
+	dsn := config.DBUser + ":" + config.DBPass + "@tcp(" + config.DBHost + ":" + config.DBPort + ")/" + config.DBName + "?parseTime=True"
 	client, err := ent.Open("mysql", dsn)
 	if err != nil {
 		log.Fatalf("failed opening connection to mysql: %v", err)
