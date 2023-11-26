@@ -1,7 +1,8 @@
 DOCKER_COMPOSE := docker-compose -f docker-compose.yml
+export BUILD_TARGET=development
 
 docker/setup:
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) up
 
 docker/db/ssh:
 	$(DOCKER_COMPOSE) exec db /bin/bash

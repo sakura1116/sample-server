@@ -9,21 +9,20 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: sample
-      TZ: Asia/Tokyo
     ports:
       - 3306:3306
     tty: true
     volumes:
-      - .:/opt/sample:cached
+      - .:/app:cached
   api:
     build:
       context: .
-      dockerfile:
-        api.Dockerfile
+      dockerfile: api.Dockerfile
+      target: development
     ports:
       - 8080:8080
     volumes:
-      - .:/opt/sample:cached
+      - .:/app:cached
     tty: true
     env_file:
       - ./docker-compose.env
