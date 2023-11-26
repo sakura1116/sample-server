@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/dig"
@@ -10,13 +11,15 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sample-server/ent"
+	"sample-server/ent/user"
 	"strings"
 	"syscall"
 	"time"
 )
 
 type User struct {
-	ID        string
+	ID        int
 	FirstName string
 	LastName  string
 	Auth0UID  string
@@ -27,10 +30,27 @@ type IUserRepository interface {
 }
 
 type UserRepository struct {
+	client *ent.Client
+}
+
+func NewUserRepository(client *ent.Client) *UserRepository {
+	return &UserRepository{client: client}
 }
 
 func (repo *UserRepository) FindByAuth0UID(auth0UID string) (*User, error) {
-	return &User{ID: "123", FirstName: "Sample", LastName: "User", Auth0UID: auth0UID}, nil
+	u, err := repo.client.User.
+		Query().
+		Where(user.Auth0UIDEQ(auth0UID)).
+		Only(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	return &User{
+		ID:        u.ID,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Auth0UID:  u.Auth0UID,
+	}, nil
 }
 
 type UserUseCase struct {
@@ -46,11 +66,11 @@ func handleError(c *fiber.Ctx, err error) error {
 
 func userHandler(uc *UserUseCase) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		user, err := uc.GetUserByAuth0UID("auth0-uid-123")
+		u, err := uc.GetUserByAuth0UID("abc123")
 		if handleError(c, err) != nil {
 			return err
 		}
-		return c.JSON(user)
+		return c.JSON(u)
 	}
 }
 
@@ -59,7 +79,10 @@ func (uc *UserUseCase) GetUserByAuth0UID(auth0UID string) (*User, error) {
 }
 
 func main() {
-	container := setupDIContainer()
+	client := setupDatabase()
+	defer client.Close()
+	container := setupDIContainer(client)
+
 	app := fiber.New()
 
 	if err := setupRoutes(app, container); err != nil {
@@ -73,10 +96,24 @@ func main() {
 	}
 }
 
-func setupDIContainer() *dig.Container {
+func setupDatabase() *ent.Client {
+	dbHost := "db"
+	dbPort := "3306"
+	dbUser := "root"
+	dbPassword := "password"
+	dbName := "sample"
+	dsn := dbUser + ":" + dbPassword + "@tcp(" + dbHost + ":" + dbPort + ")/" + dbName + "?parseTime=True"
+	client, err := ent.Open("mysql", dsn)
+	if err != nil {
+		log.Fatalf("failed opening connection to mysql: %v", err)
+	} else {
+	}
+	return client
+}
+func setupDIContainer(client *ent.Client) *dig.Container {
 	container := dig.New()
 	container.Provide(func() IUserRepository {
-		return &UserRepository{}
+		return NewUserRepository(client)
 	})
 	container.Provide(func(repo IUserRepository) *UserUseCase {
 		return &UserUseCase{UserRepo: repo}
@@ -113,7 +150,7 @@ func jwtMiddleware(next fiber.Handler) fiber.Handler {
 				return c.Status(fiber.StatusUnauthorized).SendString(err.Error())
 			}
 
-			// トークンが有効な場合の処理
+			// TODO トークンが有効な場合の処理
 			fmt.Println(token)
 			return next(c)
 		} else {
