@@ -1,0 +1,29 @@
+name: testing
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0.28
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: sample_test
+        ports:
+          - 3306:3306
+    env:
+      DB_USER: root
+      DB_PASS: password
+      DB_HOST: localhost
+      DB_NAME: sample_test
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+      - name: Install dependencies
+        run: make update
+      - name: Run test
+        run: make test
