@@ -1,16 +1,21 @@
-FROM golang:1.21.4 as builder
+FROM golang:1.21.4 as base
 
-ENV PATH="$GOPATH/bin:$PATH"
-
-WORKDIR /opt/sample
-COPY . .
-
-RUN go clean --modcache
+WORKDIR /app
+COPY go.mod go.sum ./
 RUN go mod download
 
-# use local
+FROM base as development
 RUN go install github.com/pilu/fresh@latest
-
 EXPOSE 8080
+CMD ["fresh"]
 
-CMD ["/go/bin/fresh"]
+FROM base as builder
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+
+FROM alpine:latest as production
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=builder /app/app .
+EXPOSE 8080
+CMD ["./app"]
