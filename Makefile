@@ -24,5 +24,6 @@ fmt:
 
 test: fmt
 	go test -v -race ./...
-run:
-	go run main.go
+
+bash:
+	/bin/bash
