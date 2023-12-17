@@ -19,5 +19,5 @@ RUN go clean --modcache
 RUN go mod download
 
 COPY . .
-ENTRYPOINT ["/usr/bin/make", "-C", "migrations"]
+ENTRYPOINT ["/usr/bin/make"]
 CMD ["bash"]

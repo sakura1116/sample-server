@@ -41,6 +41,7 @@ services:
       dockerfile: batch.Dockerfile
     volumes:
       - .:/app:cached
+    tty: true
     environment:
       APP_ENV: development
       DB_USER: root
