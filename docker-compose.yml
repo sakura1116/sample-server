@@ -35,17 +35,19 @@ services:
       DB_PORT: 3306
     links:
       - db
-#  batch:
-#    build:
-#      context: .
-#      dockerfile: batch.Dockerfile
-#    volumes:
-#      - .:/opt/sample:cached
-#    environment:
-#      APP_ENV: development
-#      DB_USER: root
-#      DB_PASS: password
-#      DB_HOST: db
-#      DB_NAME: sample
-#    links:
-#      - db
+  batch:
+    build:
+      context: .
+      dockerfile: batch.Dockerfile
+    volumes:
+      - .:/app:cached
+    tty: true
+    environment:
+      APP_ENV: development
+      DB_USER: root
+      DB_PASS: password
+      DB_HOST: db
+      DB_NAME: sample
+      DB_PORT: 3306
+    links:
+      - db
