@@ -10,6 +10,9 @@ docker/db/ssh:
 docker/db/cli:
 	$(DOCKER_COMPOSE) exec db mysql -u root -ppassword sample
 
+docker/db/migrate:
+	$(DOCKER_COMPOSE) exec batch /usr/bin/make db/migrate -C migrations
+
 docker/api/ssh:
 	$(DOCKER_COMPOSE) exec api /bin/bash
 
